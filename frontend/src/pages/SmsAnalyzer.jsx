@@ -1,10 +1,63 @@
+
 import { useState } from "react";
-import Navbar from "../components/Navbar";
+import PageLayout from "../components/PageLayout";
 import Loader from "../components/Loader";
 import ResultCard from "../components/ResultCard";
 import { addHistory } from "../utils/historyStorage";
 import { apiFetch } from "../utils/api";
-import { pageTheme } from "../styles/theme";
+
+const scamPatterns = [
+  {
+    number: "01",
+    title: "Fake KYC updates",
+    description:
+      "Messages threaten account restrictions unless you urgently update KYC details.",
+    example: "Your bank KYC has expired. Update immediately.",
+    tag: "BANKING FRAUD",
+  },
+  {
+    number: "02",
+    title: "UPI payment tricks",
+    description:
+      "Fraudsters may send fake payment requests or ask you to enter your UPI PIN.",
+    example: "Approve this request to receive your refund.",
+    tag: "PAYMENT FRAUD",
+  },
+  {
+    number: "03",
+    title: "Parcel delivery scams",
+    description:
+      "Fake delivery alerts use unexpected fees or address updates to lure people to links.",
+    example: "Your parcel is on hold. Pay a small fee.",
+    tag: "DELIVERY FRAUD",
+  },
+  {
+    number: "04",
+    title: "Prize and reward scams",
+    description:
+      "Unexpected winnings are used to collect personal details or encourage payments.",
+    example: "You have won a cash reward. Claim now.",
+    tag: "REWARD FRAUD",
+  },
+];
+
+const safetyChecks = [
+  {
+    number: "01",
+    title: "Unknown sender",
+    description: "Do you recognise the sender and expect this message?",
+  },
+  {
+    number: "02",
+    title: "Suspicious links",
+    description: "Does the message contain an unfamiliar or shortened URL?",
+  },
+  {
+    number: "03",
+    title: "Urgent requests",
+    description: "Is it pressuring you to act, pay or share information?",
+  },
+];
 
 function SmsAnalyzer() {
   const [sms, setSms] = useState("");
@@ -16,7 +69,7 @@ function SmsAnalyzer() {
     const input = sms.trim();
 
     if (!input) {
-      setError("⚠ SMS Content is required to analyze");
+      setError("SMS content is required to analyze.");
       setResult(null);
       return;
     }
@@ -80,9 +133,7 @@ function SmsAnalyzer() {
       setResult(null);
 
       setError(
-        `⚠ ${
-          err.message || "Unable to analyze SMS."
-        }`
+        err.message || "Unable to analyze SMS."
       );
     } finally {
       setLoading(false);
@@ -96,368 +147,356 @@ function SmsAnalyzer() {
   };
 
   return (
-    <>
-      <Navbar />
+    <PageLayout>
+      <div className="sms-intelligence">
 
-      <div
-        style={{
-          minHeight: "calc(100vh - 72px)",
-          background:
-            "radial-gradient(circle at 50% 0%, #172554 0%, #0F172A 55%, #020617 100%)",
-          color: "white",
-          fontFamily: "Arial, sans-serif",
-          padding: "55px 40px 70px",
-          boxSizing: "border-box",
-        }}
-      >
-        <div
-          style={{
-            maxWidth: "1100px",
-            margin: "0 auto",
-          }}
-        >
-
-          {/* ================= HERO ================= */}
-
-          <div
-            style={{
-              textAlign: "center",
-              marginBottom: "45px",
-            }}
-          >
-            {/* SECURITY CENTER */}
-
-            <div
-              style={{
-                display: "inline-block",
-                alignItems: "center",
-                padding: "7px 15px",
-                border: "1px solid #1d4ed8",
-                borderRadius: "30px",
-                color: "#60A5FA",
-                fontSize: "13px",
-                fontWeight: "bold",
-                letterSpacing: "0.5px",
-               
-                marginBottom: "20px",
-              }}
-            >
-              🛡️ SECURITY SCANNER
+        {/* PAGE HEADER */}
+        <header className="sms-intelligence-header">
+          <div>
+            <div className="sms-intelligence-eyebrow">
+              <span className="sms-eyebrow-dot" />
+              MOBILE SECURITY / MESSAGE INTELLIGENCE
             </div>
 
-            {/* TITLE */} 
-            <h1
-              style={{
-                margin: "0",
-                fontSize: "46px",
-                fontWeight: "800",
-              }}
-            >
-              📱 SMS{" "}
-              <span
-                style={{
-                  color: "#5da1f5",
-                }}
-              >
-                Analyzer
-              </span>
+            <h1>
+              Decode the <span>message.</span>
             </h1>
 
-            <p
-              style={{
-                marginTop: "18px",
-                color: "#94A3B8",
-                fontSize: "17px",
-              }}
-            >
-              Analyze suspicious SMS messages for
-              scams, phishing and security threats.
+            <p>
+              Investigate suspicious text messages, understand
+              common SMS fraud techniques and review the
+              security assessment.
             </p>
           </div>
 
-          {/* ================= INPUT CARD ================= */}
+          <div className="sms-header-mark">
+            <span>03</span>
+            <div>
+              SMS
+              <br />
+              INTELLIGENCE
+            </div>
+          </div>
+        </header>
 
-          <div
-            style={{
-              maxWidth: "850px",
-              margin: "0 auto",
-              background:
-                "rgba(30,41,59,0.82)",
-              padding: "30px",
-              borderRadius: "16px",
-              border: "1px solid #334155",
-              boxShadow:
-                "0 15px 45px rgba(0,0,0,0.25)",
-              backdropFilter: "blur(10px)",
-            }}
-          >
+        {/* MAIN CONTENT */}
+        <div className="sms-intelligence-layout">
 
-            {/* INPUT HEADER */}
+          {/* LEFT: PHONE INVESTIGATION */}
+          <main className="sms-investigation-column">
 
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                gap: "15px",
-                marginBottom: "12px",
-                flexWrap: "wrap",
-              }}
-            >
+            <section className="sms-phone-section">
+              <div className="sms-phone-section-heading">
+                <div>
+                  <span className="sms-kicker">
+                    MESSAGE INSPECTION
+                  </span>
+
+                  <h2>Inspect a text message</h2>
+
+                  <p>
+                    Paste the SMS content to investigate
+                    potentially suspicious patterns.
+                  </p>
+                </div>
+
+                <span className="sms-device-label">
+                  MOBILE / SMS
+                </span>
+              </div>
+
+              {/* PHONE PREVIEW */}
+              <div className="sms-phone-stage">
+                <div className="sms-phone">
+                  <div className="sms-phone-top">
+                    <span className="sms-phone-speaker" />
+                    <span className="sms-phone-camera" />
+                  </div>
+
+                  <div className="sms-phone-screen">
+                    <div className="sms-phone-status">
+                      <span>MESSAGE PREVIEW</span>
+                      <span>•••</span>
+                    </div>
+
+                    <div className="sms-phone-contact">
+                      <div className="sms-contact-avatar">
+                        SMS
+                      </div>
+
+                      <div>
+                        <strong>Unknown sender</strong>
+                        <span>Sender not verified</span>
+                      </div>
+                    </div>
+
+                    <div className="sms-phone-date">
+                      MESSAGE CONTENT
+                    </div>
+
+                    <div className="sms-chat-area">
+                      {sms.trim() ? (
+                        <div className="sms-chat-bubble">
+                          {sms}
+                        </div>
+                      ) : (
+                        <div className="sms-chat-placeholder">
+                          <span>✉</span>
+                          <strong>Your message will appear here</strong>
+                          <p>
+                            Paste an SMS in the editor below
+                            to preview its content.
+                          </p>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="sms-phone-bottom">
+                      <span>Message preview only</span>
+                      <span>FraudLens</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="sms-phone-caption">
+                  <span className="sms-preview-dot" />
+                  LIVE MESSAGE PREVIEW
+                </div>
+              </div>
+
+              {/* INPUT EDITOR */}
+              <div className="sms-editor-panel">
+                <div className="sms-editor-heading">
+                  <label htmlFor="sms-content">
+                    SMS CONTENT
+                  </label>
+
+                  <span>
+                    {sms.length.toLocaleString()} characters
+                  </span>
+                </div>
+
+                <textarea
+                  id="sms-content"
+                  className="sms-editor"
+                  value={sms}
+                  onChange={(e) => {
+                    setSms(e.target.value);
+
+                    if (error) {
+                      setError("");
+                    }
+                  }}
+                  onKeyDown={(e) => {
+                    if (
+                      (e.ctrlKey || e.metaKey) &&
+                      e.key === "Enter" &&
+                      !loading
+                    ) {
+                      handleAnalyze();
+                    }
+                  }}
+                  placeholder={
+                    "Paste the suspicious SMS message here...\n\nExample:\nDear Customer, your bank account KYC has expired. Update your details immediately using the link below..."
+                  }
+                  rows={6}
+                  disabled={loading}
+                />
+
+                <div className="sms-editor-meta">
+                  <span>
+                    <span className="sms-editor-ready-dot" />
+                    READY FOR INSPECTION
+                  </span>
+
+                  <span>CTRL + ENTER TO ANALYZE</span>
+                </div>
+
+                {error && (
+                  <div className="sms-error" role="alert">
+                    <span>!</span>
+                    {error}
+                  </div>
+                )}
+
+                <div className="sms-actions">
+                  <button
+                    type="button"
+                    className="sms-analyze-button"
+                    onClick={handleAnalyze}
+                    disabled={loading}
+                  >
+                    {loading
+                      ? "Analyzing message..."
+                      : "Analyze SMS"}
+
+                    <span>↗</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    className="sms-clear-button"
+                    onClick={handleClear}
+                    disabled={loading}
+                  >
+                    Clear
+                  </button>
+                </div>
+
+                <div className="sms-editor-note">
+                  <span>ⓘ</span>
+                  Submit only message content you are authorised to inspect.
+                </div>
+              </div>
+            </section>
+
+            {/* SAFETY CHECKLIST */}
+            <section className="sms-checklist-panel">
+              <div className="sms-checklist-heading">
+                <div>
+                  <span className="sms-kicker">
+                    QUICK SECURITY CHECK
+                  </span>
+
+                  <h2>Before you trust an SMS</h2>
+                </div>
+
+                <span>03 CHECKS</span>
+              </div>
+
+              <div className="sms-checklist-grid">
+                {safetyChecks.map((item) => (
+                  <article
+                    className="sms-check-item"
+                    key={item.number}
+                  >
+                    <span>{item.number}</span>
+
+                    <div>
+                      <h3>{item.title}</h3>
+                      <p>{item.description}</p>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            </section>
+          </main>
+
+          {/* RIGHT: SMS THREAT INTELLIGENCE */}
+          <aside className="sms-threat-panel">
+            <div className="sms-threat-heading">
+              <span className="sms-kicker">
+                SMS THREAT LIBRARY
+              </span>
+
+              <span className="sms-threat-symbol">⌁</span>
+            </div>
+
+            <h2>Know the common tricks.</h2>
+
+            <p className="sms-threat-intro">
+              Fraudulent SMS messages often imitate banks,
+              delivery services and familiar organisations
+              to make requests look legitimate.
+            </p>
+
+            <div className="sms-scam-list">
+              {scamPatterns.map((pattern) => (
+                <article
+                  className="sms-scam-item"
+                  key={pattern.number}
+                >
+                  <div className="sms-scam-topline">
+                    <span className="sms-scam-number">
+                      {pattern.number}
+                    </span>
+
+                    <span className="sms-scam-tag">
+                      {pattern.tag}
+                    </span>
+                  </div>
+
+                  <h3>{pattern.title}</h3>
+
+                  <p>{pattern.description}</p>
+
+                  <code>{pattern.example}</code>
+                </article>
+              ))}
+            </div>
+
+            <div className="sms-threat-warning">
+              <span>!</span>
+
               <div>
-                <strong
-                  style={{
-                    fontSize: "17px",
-                  }}
-                >
-                  📱 SMS Content
-                </strong>
+                <strong>Never share your OTP or UPI PIN.</strong>
 
-                <p
-                  style={{
-                    margin: "5px 0 0",
-                    color: "#64748B",
-                    fontSize: "13px",
-                  }}
-                >
-                  Paste the suspicious message for
-                  security analysis.
+                <p>
+                  You do not need to enter your UPI PIN
+                  to receive money. Verify unexpected
+                  requests independently.
                 </p>
               </div>
-
-              <span
-                style={{
-                  padding: "6px 11px",
-                  borderRadius: "20px",
-                  background: "#0F172A",
-                  color: "#94A3B8",
-                  fontSize: "12px",
-                }}
-              >
-                {sms.length} characters
-              </span>
             </div>
-
-            {/* TEXTAREA */}
-
-            <textarea
-              value={sms}
-              onChange={(e) => {
-                setSms(e.target.value);
-
-                if (error) {
-                  setError("");
-                }
-              }}
-              onKeyDown={(e) => {
-                if (
-                  (e.ctrlKey || e.metaKey) &&
-                  e.key === "Enter" &&
-                  !loading
-                ) {
-                  handleAnalyze();
-                }
-              }}
-              placeholder="Paste suspicious SMS message here...
-
-Example:
-Congratulations! You have won a reward. Click the link to claim..."
-              rows={9}
-              disabled={loading}
-              style={{
-                width: "100%",
-                padding: "16px",
-                borderRadius: "10px",
-                border:
-                  "1px solid #475569",
-                background: "#020617",
-                color: "white",
-                fontSize: "15px",
-                boxSizing: "border-box",
-                resize: "vertical",
-                outline: "none",
-                lineHeight: "1.7",
-                fontFamily:
-                  "Arial, sans-serif",
-                opacity: loading ? 0.7 : 1,
-              }}
-            />
-
-            {/* ERROR */}
-
-            {error && (
-              <div
-                style={{
-                  marginTop: "14px",
-                  padding: "13px 15px",
-                  background:
-                    "rgba(127,29,29,0.45)",
-                  border:
-                    "1px solid rgba(239,68,68,0.35)",
-                  borderRadius: "10px",
-                  color: "#FCA5A5",
-                  fontSize: "14px",
-                  lineHeight: "1.5",
-                }}
-              >
-                {error}
-              </div>
-            )}
-
-            {/* BUTTONS */}
-
-            <div
-              style={{
-                display: "flex",
-                gap: "12px",
-                marginTop: "20px",
-                flexWrap: "wrap",
-              }}
-            >
-              <button
-                onClick={handleAnalyze}
-                disabled={loading}
-                style={{
-                  flex: "1",
-                  minWidth: "180px",
-                  padding: "13px 25px",
-                  background: loading
-                    ? "#475569"
-                    : "#2563EB",
-                  color: "white",
-                  border: "none",
-                  borderRadius: "9px",
-                  cursor: loading
-                    ? "not-allowed"
-                    : "pointer",
-                  fontSize: "15px",
-                  fontWeight: "bold",
-                  boxShadow: loading
-                    ? "none"
-                    : "0 8px 20px rgba(37,99,235,0.25)",
-                }}
-              >
-                {loading
-                  ? "🤖 Analyzing SMS..."
-                  : "🔍 Analyze SMS"}
-              </button>
-
-              <button
-                onClick={handleClear}
-                disabled={loading}
-                style={{
-                  padding: "13px 25px",
-                  background: "#334155",
-                  color: "white",
-                  border:
-                    "1px solid #475569",
-                  borderRadius: "9px",
-                  cursor: loading
-                    ? "not-allowed"
-                    : "pointer",
-                  fontSize: "15px",
-                  opacity: loading ? 0.6 : 1,
-                }}
-              >
-                ✕ Clear
-              </button>
-            </div>
-
-            {/* SHORTCUT */}
-
-            <p
-              style={{
-                margin: "15px 0 0",
-                color: "#64748B",
-                fontSize: "12px",
-                textAlign: "right",
-              }}
-            >
-              Tip: Press Ctrl + Enter to analyze
-            </p>
-          </div>
-
-          {/* ================= LOADER ================= */}
-
-          {loading && (
-            <div
-              style={{
-                maxWidth: "850px",
-                margin: "30px auto 0",
-                background:
-                  "rgba(30,41,59,0.75)",
-                padding: "20px",
-                borderRadius: "14px",
-                border:
-                  "1px solid #334155",
-              }}
-            >
-              <Loader />
-            </div>
-          )}
-
-          {/* ================= RESULT ================= */}
-
-          {result && !loading && (
-            <div
-              style={{
-                maxWidth: "850px",
-                margin: "35px auto 0",
-              }}
-            >
-              <ResultCard
-                score={result.score}
-                status={result.status}
-                reason={result.reason}
-                recommendation={
-                  result.recommendation
-                }
-                details={result.details}
-              />
-            </div>
-          )}
-
-          {/* ================= INFO ================= */}
-
-          {!result &&
-            !loading &&
-            !error && (
-              <div
-                style={{
-                  maxWidth: "850px",
-                  margin: "30px auto 0",
-                  padding: "18px 20px",
-                  background:
-                    "rgba(30,41,59,0.55)",
-                  border:
-                    "1px solid rgba(51,65,85,0.7)",
-                  borderRadius: "12px",
-                  textAlign: "center",
-                  color: "#94A3B8",
-                  fontSize: "13px",
-                }}
-              >
-                🛡️ FraudLens will analyze the
-                message and provide a threat score,
-                reason and security recommendation.
-              </div>
-            )}
-
-          {/* ================= FOOTER ================= */}
-
-          <footer
-            style={{
-              textAlign: "center",
-              padding: "50px 0 10px",
-              color: "#475569",
-              fontSize: "13px",
-            }}
-          >
-            🛡️ FraudLens — SMS Security Analyzer
-          </footer>
+          </aside>
         </div>
+
+        {/* RESULT */}
+        {loading && (
+          <section className="sms-result-section">
+            <div>
+              <span className="sms-kicker">
+                ANALYSIS IN PROGRESS
+              </span>
+
+              <h2>Inspecting SMS content</h2>
+
+              <p>
+                Please wait while FraudLens processes
+                the submitted message.
+              </p>
+            </div>
+
+            <Loader />
+          </section>
+        )}
+
+        {result && !loading && (
+          <section className="sms-result-section">
+            <div className="sms-result-heading">
+              <span className="sms-kicker">
+                INVESTIGATION COMPLETE
+              </span>
+
+              <h2>SMS security assessment</h2>
+
+              <p>
+                Review the findings and recommendations
+                returned by the FraudLens analysis engine.
+              </p>
+            </div>
+
+            <ResultCard
+              score={result.score}
+              status={result.status}
+              reason={result.reason}
+              recommendation={result.recommendation}
+              details={result.details}
+              onScanAgain={handleClear}
+            />
+          </section>
+        )}
+
+        {/* FOOTER */}
+        <footer className="sms-intelligence-footer">
+          <span>FRAUDLENS / SMS INTELLIGENCE</span>
+
+          <span>
+            Automated analysis may not identify every fraudulent message.
+          </span>
+        </footer>
       </div>
-    </>
+    </PageLayout>
   );
 }
 

@@ -1,3 +1,4 @@
+
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 
 import Home from "../pages/Home";
@@ -7,6 +8,7 @@ import UrlScanner from "../pages/UrlScanner";
 import EmailAnalyzer from "../pages/EmailAnalyzer";
 import SmsAnalyzer from "../pages/SmsAnalyzer";
 import History from "../pages/History";
+import FraudAwareness from "../pages/FraudAwareness";
 
 import ProtectedRoute from "../components/ProtectedRoute";
 
@@ -61,6 +63,15 @@ function AppRoutes() {
           element={
             <ProtectedRoute>
               <History />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/fraud-awareness"
+          element={
+            <ProtectedRoute>
+              <FraudAwareness />
             </ProtectedRoute>
           }
         />
