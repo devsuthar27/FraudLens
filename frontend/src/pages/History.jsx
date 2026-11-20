@@ -1,13 +1,66 @@
-import { useEffect, useState } from "react";
+
+import { useEffect, useMemo, useState } from "react";
 import PageLayout from "../components/PageLayout";
 import { apiFetch } from "../utils/api";
+import "./History.css";
+
+function getRiskLevel(status) {
+  const value = status?.toLowerCase() || "";
+
+  if (value.includes("high") || value.includes("malicious")) return "high";
+  if (value.includes("medium") || value.includes("suspicious")) return "medium";
+  if (
+    value.includes("low") ||
+    value.includes("safe") ||
+    value.includes("no threat")
+  ) return "low";
+
+  return "unknown";
+}
+
+function getRecordKey(item, index) {
+  return item._id || `${item.createdAt || "record"}-${index}`;
+}
+
+function getTypeIcon(type) {
+  switch (type?.toUpperCase()) {
+    case "URL": return "◎";
+    case "EMAIL": return "✉";
+    case "SMS": return "▤";
+    default: return "⌕";
+  }
+}
+
+function formatDate(date) {
+  if (!date) return "Unknown time";
+
+  const parsed = new Date(date);
+  if (Number.isNaN(parsed.getTime())) return "Unknown time";
+
+  return parsed.toLocaleString();
+}
+
+function formatShortDate(date) {
+  if (!date) return "Unknown date";
+
+  const parsed = new Date(date);
+  if (Number.isNaN(parsed.getTime())) return "Unknown date";
+
+  return parsed.toLocaleDateString(undefined, {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+}
 
 function History() {
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-
-  // ================= FETCH HISTORY =================
+  const [search, setSearch] = useState("");
+  const [riskFilter, setRiskFilter] = useState("All");
+  const [typeFilter, setTypeFilter] = useState("All");
+  const [selectedKey, setSelectedKey] = useState(null);
 
   useEffect(() => {
     const fetchHistory = async () => {
@@ -17,30 +70,26 @@ function History() {
 
         const response = await apiFetch(
           "http://localhost:5000/api/history",
-          {
-            method: "GET",
-          }
+          { method: "GET" }
         );
 
-        if (!response) {
-          return;
-        }
+        if (!response) return;
 
         const data = await response.json();
 
         if (!response.ok) {
-          throw new Error(
-            data.error || "Unable to fetch history."
-          );
+          throw new Error(data.error || "Unable to fetch history.");
         }
 
-        setHistory(data.history || []);
+        const records = data.history || [];
+        setHistory(records);
+
+        if (records.length > 0) {
+          setSelectedKey(getRecordKey(records[0], 0));
+        }
       } catch (err) {
         console.error("History Fetch Error:", err);
-
-        setError(
-          err.message || "Unable to load scan history."
-        );
+        setError(err.message || "Unable to load scan history.");
       } finally {
         setLoading(false);
       }
@@ -49,486 +98,422 @@ function History() {
     fetchHistory();
   }, []);
 
-  // ================= HELPERS =================
+  const filteredHistory = useMemo(() => {
+    return history
+      .map((item, index) => ({ ...item, _displayKey: getRecordKey(item, index) }))
+      .filter((item) => {
+        const text =
+          `${item.type || ""} ${item.input || ""} ${item.status || ""}`
+            .toLowerCase();
 
-  const getTypeIcon = (type) => {
-    switch (type?.toUpperCase()) {
-      case "URL":
-        return "🌐";
+        const matchesSearch = text.includes(search.toLowerCase());
+        const risk = getRiskLevel(item.status);
 
-      case "EMAIL":
-        return "📧";
+        const matchesRisk =
+          riskFilter === "All" ||
+          (riskFilter === "High" && risk === "high") ||
+          (riskFilter === "Medium" && risk === "medium") ||
+          (riskFilter === "Low" && risk === "low");
 
-      case "SMS":
-        return "📱";
+        const matchesType =
+          typeFilter === "All" ||
+          item.type?.toUpperCase() === typeFilter.toUpperCase();
 
-      default:
-        return "🔍";
-    }
+        return matchesSearch && matchesRisk && matchesType;
+      });
+  }, [history, search, riskFilter, typeFilter]);
+
+  const selectedRecord =
+    filteredHistory.find((item) => item._displayKey === selectedKey) ||
+    filteredHistory[0] ||
+    null;
+
+  const highCount = history.filter(
+    (item) => getRiskLevel(item.status) === "high"
+  ).length;
+
+  const mediumCount = history.filter(
+    (item) => getRiskLevel(item.status) === "medium"
+  ).length;
+
+  const lowCount = history.filter(
+    (item) => getRiskLevel(item.status) === "low"
+  ).length;
+
+  const resetFilters = () => {
+    setSearch("");
+    setRiskFilter("All");
+    setTypeFilter("All");
   };
-
-  const getStatusColor = (status) => {
-    if (!status) return "#94A3B8";
-
-    const value = status.toLowerCase();
-
-    if (
-      value.includes("high") ||
-      value.includes("malicious")
-    ) {
-      return "#F87171";
-    }
-
-    if (
-      value.includes("medium") ||
-      value.includes("suspicious")
-    ) {
-      return "#FBBF24";
-    }
-
-    if (
-      value.includes("low") ||
-      value.includes("safe") ||
-      value.includes("no threat")
-    ) {
-      return "#4ADE80";
-    }
-
-    return "#94A3B8";
-  };
-
-  // ================= LOADING =================
-
-  if (loading) {
-    return (
-      <PageLayout>
-        <div
-          style={{
-            minHeight: "calc(100vh - 72px)",
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            color: "#CBD5E1",
-            fontSize: "18px",
-          }}
-        >
-          ⏳ Loading scan history...
-        </div>
-      </PageLayout>
-    );
-  }
-
-  // ================= PAGE =================
 
   return (
     <PageLayout>
-      <div
-  style={{
-    maxWidth: "1100px",
-    margin: "0 auto",
-    padding: "50px 30px 30px",
-    boxSizing: "border-box",
-  }}
->
+      <main className="investigation-page">
 
-        {/* ================= HEADER ================= */}
-
-        <div
-          style={{
-            textAlign: "center",
-            marginBottom: "45px",
-          }}
-        >
-          {/* Security Center Badge */}
-
-          <div
-            style={{
-              display: "inline-block",
-              alignItems: "center",
-              gap: "1px",
-              padding: "7px 15px",
-              border: "1px solid #1D4ED8",
-              borderRadius: "20px",
-              color: "#60A5FA",
-              fontSize: "13px",
-              fontWeight: "bold",
-              marginBottom: "18px",
-              background: "rgba(37, 99, 235, 0.08)",
-            }}
-          >
-            🛡️ SECURITY SCANNER
-          </div>
-
-          <h1
-            style={{
-              margin: 0,
-              fontSize: "46px",
-              fontWeight: "800",
-              letterSpacing: "1px",
-            }}
-          >
-            📜 Scan{" "}
-            <span style={{ color: "#5da1f5" }}>
-              History
-            </span>
-          </h1>
-
-          <p
-            style={{
-              
-              color: "#94A3B8",
-              fontSize: "17px",
-            }}
-          >
-            Review your previous FraudLens security analyses.
-          </p>
-        </div>
-
-        {/* ================= ERROR ================= */}
-
-        {error && (
-          <div
-            style={{
-              maxWidth: "900px",
-              margin: "0 auto 25px",
-              padding: "15px 18px",
-              background: "rgba(127, 29, 29, 0.35)",
-              border: "1px solid #7F1D1D",
-              borderRadius: "10px",
-              color: "#FCA5A5",
-              textAlign: "center",
-            }}
-          >
-            ⚠️ {error}
-          </div>
-        )}
-
-        {/* ================= EMPTY ================= */}
-
-        {!error && history.length === 0 && (
-          <div
-            style={{
-              background: "rgba(30, 41, 59, 0.75)",
-              border: "1px solid #334155",
-              borderRadius: "18px",
-              padding: "70px 30px",
-              textAlign: "center",
-              boxShadow:
-                "0 15px 40px rgba(0,0,0,0.20)",
-            }}
-          >
-            <div
-              style={{
-                fontSize: "60px",
-                marginBottom: "15px",
-              }}
-            >
-              📭
+        {/* TOP HEADER */}
+        <header className="investigation-header">
+          <div>
+            <div className="investigation-eyebrow">
+              <span className="eyebrow-pulse" />
+              FRAUDLENS / INTELLIGENCE CENTER
             </div>
 
-            <h2
-              style={{
-                marginBottom: "10px",
-              }}
-            >
-              No Scan History Yet
-            </h2>
-
-            <p
-              style={{
-                color: "#94A3B8",
-                margin: 0,
-              }}
-            >
-              Your URL, Email and SMS analyses
-              will appear here after scanning.
+            <h1>Investigation <span>Log</span></h1>
+            <p>
+              A centralized view of every URL, email and SMS security analysis.
             </p>
           </div>
-        )}
 
-        {/* ================= HISTORY ================= */}
+          <div className="investigation-total">
+            <span className="total-symbol">◷</span>
+            <div>
+              <strong>{history.length}</strong>
+              <small>RECORDED SCANS</small>
+            </div>
+          </div>
+        </header>
 
-        {!error && history.length > 0 && (
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              gap: "18px",
-            }}
-          >
-            {history.map((item, index) => {
-              const statusColor = getStatusColor(
-                item.status
-              );
+        {/* COMPACT OVERVIEW STRIP */}
+        <section className="investigation-overview">
+          <div className="overview-cell">
+            <span className="overview-label">TOTAL ACTIVITY</span>
+            <strong>{history.length}</strong>
+            <span className="overview-foot">All recorded analyses</span>
+          </div>
 
-              return (
-                <div
-                  key={item._id || index}
-                  style={{
-                    background:
-                      "rgba(30, 41, 59, 0.78)",
-                    border:
-                      "1px solid #334155",
-                    borderRadius: "16px",
-                    padding: "24px",
-                    boxShadow:
-                      "0 12px 35px rgba(0,0,0,0.18)",
-                    backdropFilter: "blur(8px)",
-                  }}
-                >
+          <div className="overview-cell">
+            <span className="overview-label">HIGH RISK</span>
+            <strong className="risk-text-high">{highCount}</strong>
+            <span className="overview-foot">Malicious / high risk</span>
+          </div>
 
-                  {/* TOP */}
+          <div className="overview-cell">
+            <span className="overview-label">MEDIUM RISK</span>
+            <strong className="risk-text-medium">{mediumCount}</strong>
+            <span className="overview-foot">Suspicious results</span>
+          </div>
 
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent:
-                        "space-between",
-                      alignItems: "center",
-                      gap: "20px",
-                      flexWrap: "wrap",
-                    }}
+          <div className="overview-cell">
+            <span className="overview-label">LOW RISK</span>
+            <strong className="risk-text-low">{lowCount}</strong>
+            <span className="overview-foot">Safe / low risk</span>
+          </div>
+
+          <div className="overview-visual" aria-hidden="true">
+            <div className="overview-bar">
+              <span style={{ width: `${history.length ? (highCount / history.length) * 100 : 0}%` }} />
+              <span style={{ width: `${history.length ? (mediumCount / history.length) * 100 : 0}%` }} />
+              <span style={{ width: `${history.length ? (lowCount / history.length) * 100 : 0}%` }} />
+            </div>
+            <small>RISK DISTRIBUTION</small>
+          </div>
+        </section>
+
+        {/* WORKSPACE */}
+        <section className="investigation-workspace">
+
+          {/* LEFT: TIMELINE */}
+          <aside className="investigation-timeline">
+            <div className="workspace-panel-heading">
+              <div>
+                <span className="panel-kicker">ACTIVITY FEED</span>
+                <h2>Scan timeline</h2>
+              </div>
+              <span className="timeline-count">{filteredHistory.length}</span>
+            </div>
+
+            <div className="timeline-list">
+              {filteredHistory.map((item, index) => {
+                const risk = getRiskLevel(item.status);
+                const active = selectedRecord?._displayKey === item._displayKey;
+
+                return (
+                  <button
+                    type="button"
+                    key={item._displayKey}
+                    className={`timeline-entry ${active ? "active" : ""}`}
+                    onClick={() => setSelectedKey(item._displayKey)}
                   >
-                    <div
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "14px",
-                      }}
-                    >
-                      <div
-                        style={{
-                          width: "48px",
-                          height: "48px",
-                          borderRadius: "12px",
-                          background: "#0F172A",
-                          border:
-                            "1px solid #334155",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent:
-                            "center",
-                          fontSize: "23px",
-                        }}
-                      >
-                        {getTypeIcon(item.type)}
-                      </div>
-
-                      <div>
-                        <h3
-                          style={{
-                            margin: 0,
-                            fontSize: "18px",
-                          }}
-                        >
-                          {item.type || "Scan"}
-                        </h3>
-
-                        <p
-                          style={{
-                            margin:
-                              "5px 0 0",
-                            color: "#64748B",
-                            fontSize: "13px",
-                          }}
-                        >
-                          🕒{" "}
-                          {item.createdAt
-                            ? new Date(
-                                item.createdAt
-                              ).toLocaleString()
-                            : "Unknown time"}
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* STATUS */}
-
-                    <div
-                      style={{
-                        padding:
-                          "7px 14px",
-                        borderRadius: "20px",
-                        background:
-                          `${statusColor}18`,
-                        border:
-                          `1px solid ${statusColor}55`,
-                        color: statusColor,
-                        fontSize: "13px",
-                        fontWeight: "bold",
-                      }}
-                    >
-                      {item.status ||
-                        "Unknown"}
-                    </div>
-                  </div>
-
-                  {/* INPUT */}
-
-                  <div
-                    style={{
-                      marginTop: "20px",
-                      padding: "16px",
-                      background: "#0F172A",
-                      borderRadius: "10px",
-                      border:
-                        "1px solid #1E293B",
-                      wordBreak:
-                        "break-word",
-                    }}
-                  >
-                    <div
-                      style={{
-                        color: "#64748B",
-                        fontSize: "11px",
-                        fontWeight: "bold",
-                        marginBottom: "7px",
-                        letterSpacing: "0.5px",
-                      }}
-                    >
-                      ANALYZED INPUT
-                    </div>
-
-                    <div
-                      style={{
-                        color: "#CBD5E1",
-                        fontSize: "14px",
-                        lineHeight: "1.6",
-                      }}
-                    >
-                      {item.input || "—"}
-                    </div>
-                  </div>
-
-                  {/* SCORE */}
-
-                  <div
-                    style={{
-                      marginTop: "17px",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "10px",
-                    }}
-                  >
-                    <span
-                      style={{
-                        color: "#94A3B8",
-                      }}
-                    >
-                      Threat Score
+                    <span className={`timeline-marker ${risk}`} />
+                    <span className="timeline-entry-content">
+                      <span className="timeline-entry-top">
+                        <strong>{item.type || "SCAN"}</strong>
+                        <small>{formatShortDate(item.createdAt)}</small>
+                      </span>
+                      <span className="timeline-entry-input">
+                        {item.input || "No input available"}
+                      </span>
+                      <span className={`timeline-entry-status ${risk}`}>
+                        {item.status || "Unknown status"}
+                      </span>
                     </span>
+                    <span className="timeline-arrow">›</span>
+                  </button>
+                );
+              })}
 
-                    <strong
-                      style={{
-                        color: statusColor,
-                        fontSize: "17px",
-                      }}
-                    >
-                      {item.score ?? "—"}
-                    </strong>
+              {!loading && !error && filteredHistory.length === 0 && (
+                <div className="timeline-empty">
+                  No matching activity.
+                </div>
+              )}
+            </div>
+          </aside>
+
+          {/* CENTRE + RIGHT */}
+          <div className="investigation-main">
+
+            {/* FILTER BAR */}
+            <div className="investigation-filterbar">
+              <div className="filterbar-title">
+                <span className="panel-kicker">RECORD EXPLORER</span>
+                <strong>Security events</strong>
+                <small>{filteredHistory.length} matching records</small>
+              </div>
+
+              <div className="investigation-filters">
+                <label className="investigation-search">
+                  <span>⌕</span>
+                  <input
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    placeholder="Search records..."
+                  />
+                </label>
+
+                <select
+                  value={typeFilter}
+                  onChange={(e) => setTypeFilter(e.target.value)}
+                  aria-label="Filter by scan type"
+                >
+                  <option value="All">All types</option>
+                  <option value="URL">URL</option>
+                  <option value="EMAIL">Email</option>
+                  <option value="SMS">SMS</option>
+                </select>
+
+                <select
+                  value={riskFilter}
+                  onChange={(e) => setRiskFilter(e.target.value)}
+                  aria-label="Filter by risk"
+                >
+                  <option value="All">All risks</option>
+                  <option value="High">High</option>
+                  <option value="Medium">Medium</option>
+                  <option value="Low">Low</option>
+                </select>
+
+                {(search || riskFilter !== "All" || typeFilter !== "All") && (
+                  <button
+                    type="button"
+                    className="filter-reset"
+                    onClick={resetFilters}
+                  >
+                    Reset
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* RECORD TABLE */}
+            <div className="investigation-table-panel">
+              <div className="table-panel-heading">
+                <div>
+                  <span className="panel-kicker">RECENT ACTIVITY</span>
+                  <h2>Investigation records</h2>
+                </div>
+                <span className="table-total">{filteredHistory.length} RECORDS</span>
+              </div>
+
+              <div className="investigation-table-scroll">
+                <table className="investigation-table">
+                  <thead>
+                    <tr>
+                      <th>TYPE</th>
+                      <th>ANALYZED INPUT</th>
+                      <th>RISK STATUS</th>
+                      <th>SCORE</th>
+                    </tr>
+                  </thead>
+
+                  <tbody>
+                    {filteredHistory.map((item) => {
+                      const risk = getRiskLevel(item.status);
+                      const active = selectedRecord?._displayKey === item._displayKey;
+
+                      return (
+                        <tr
+                          key={item._displayKey}
+                          className={active ? "selected" : ""}
+                          onClick={() => setSelectedKey(item._displayKey)}
+                        >
+                          <td>
+                            <span className={`table-type-icon ${item.type?.toLowerCase() || "other"}`}>
+                              {getTypeIcon(item.type)}
+                            </span>
+                            <span className="table-type-name">{item.type || "Scan"}</span>
+                          </td>
+
+                          <td>
+                            <span className="table-input" title={item.input || ""}>
+                              {item.input || "—"}
+                            </span>
+                            <small className="table-date">{formatDate(item.createdAt)}</small>
+                          </td>
+
+                          <td>
+                            <span className={`table-risk ${risk}`}>
+                              <i />
+                              {item.status || "Unknown"}
+                            </span>
+                          </td>
+
+                          <td>
+                            <strong className={`table-score ${risk}`}>
+                              {item.score ?? "—"}
+                            </strong>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+
+                {!loading && !error && filteredHistory.length === 0 && (
+                  <div className="table-empty">
+                    <span>⌕</span>
+                    <strong>No records found</strong>
+                    <small>Try changing your search or filters.</small>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* SELECTED RECORD DETAILS */}
+            <section className="investigation-detail">
+              <div className="detail-heading">
+                <div>
+                  <span className="panel-kicker">CASE FILE / SELECTED RECORD</span>
+                  <h2>Investigation details</h2>
+                </div>
+
+                {selectedRecord && (
+                  <span className={`detail-risk ${getRiskLevel(selectedRecord.status)}`}>
+                    {selectedRecord.status || "Unknown"}
+                  </span>
+                )}
+              </div>
+
+              {!selectedRecord && !loading && !error && (
+                <div className="detail-placeholder">
+                  <span>◎</span>
+                  <strong>Select a record to investigate</strong>
+                  <small>Choose any item from the timeline or records table.</small>
+                </div>
+              )}
+
+              {selectedRecord && (
+                <div className="detail-content">
+                  <div className="detail-score-block">
+                    <div>
+                      <span className="panel-kicker">THREAT SCORE</span>
+                      <strong className={`detail-score ${getRiskLevel(selectedRecord.status)}`}>
+                        {selectedRecord.score ?? "—"}
+                        {selectedRecord.score !== undefined && selectedRecord.score !== null
+                          ? <small>/100</small>
+                          : null}
+                      </strong>
+                    </div>
+
+                    <div className="detail-record-type">
+                      <span>{getTypeIcon(selectedRecord.type)}</span>
+                      <div>
+                        <strong>{selectedRecord.type || "Security Scan"}</strong>
+                        <small>{formatDate(selectedRecord.createdAt)}</small>
+                      </div>
+                    </div>
                   </div>
 
-                  {/* REASON */}
+                  <div className="detail-input-block">
+                    <span className="panel-kicker">ANALYZED INPUT</span>
+                    <p>{selectedRecord.input || "No input available"}</p>
+                  </div>
 
-                  {item.reason && (
-                    <div
-                      style={{
-                        marginTop: "15px",
-                        color: "#CBD5E1",
-                        lineHeight: "1.6",
-                      }}
-                    >
-                      <strong>
-                        Reason:
-                      </strong>{" "}
-                      {item.reason}
+                  <div className="detail-information-grid">
+                    {selectedRecord.details?.indicatorCount !== undefined && (
+                      <div>
+                        <span>INDICATORS</span>
+                        <strong>{selectedRecord.details.indicatorCount}</strong>
+                      </div>
+                    )}
+
+                    {selectedRecord.details?.totalEngines !== undefined && (
+                      <div>
+                        <span>SECURITY ENGINES</span>
+                        <strong>{selectedRecord.details.totalEngines}</strong>
+                      </div>
+                    )}
+
+                    {selectedRecord.details?.malicious !== undefined && (
+                      <div>
+                        <span>MALICIOUS DETECTIONS</span>
+                        <strong>{selectedRecord.details.malicious}</strong>
+                      </div>
+                    )}
+
+                    {selectedRecord.details?.suspicious !== undefined && (
+                      <div>
+                        <span>SUSPICIOUS DETECTIONS</span>
+                        <strong>{selectedRecord.details.suspicious}</strong>
+                      </div>
+                    )}
+                  </div>
+
+                  {selectedRecord.reason && (
+                    <div className="detail-text-section">
+                      <span className="panel-kicker">ANALYSIS SUMMARY</span>
+                      <p>{selectedRecord.reason}</p>
                     </div>
                   )}
 
-                  {/* RECOMMENDATION */}
-
-                  {item.recommendation && (
-                    <div
-                      style={{
-                        marginTop: "15px",
-                        padding: "13px 15px",
-                        background:
-                          "rgba(37, 99, 235, 0.12)",
-                        border:
-                          "1px solid rgba(37, 99, 235, 0.25)",
-                        borderRadius: "9px",
-                        color: "#BFDBFE",
-                        lineHeight: "1.5",
-                      }}
-                    >
-                      💡{" "}
-                      <strong>
-                        Recommendation:
-                      </strong>{" "}
-                      {item.recommendation}
-                    </div>
-                  )}
-
-                  {/* DETAILS */}
-
-                  {item.details && (
-                    <div
-                      style={{
-                        marginTop: "16px",
-                        paddingTop: "14px",
-                        borderTop:
-                          "1px solid #334155",
-                        color: "#64748B",
-                        fontSize: "13px",
-                        display: "flex",
-                        gap: "20px",
-                        flexWrap: "wrap",
-                      }}
-                    >
-                      {item.details
-                        .indicatorCount !==
-                        undefined && (
-                        <span>
-                          🔎 Indicators:{" "}
-                          {
-                            item.details
-                              .indicatorCount
-                          }
-                        </span>
-                      )}
-
-                      {item.details
-                        .totalEngines !==
-                        undefined && (
-                        <span>
-                          🛡️ Engines:{" "}
-                          {
-                            item.details
-                              .totalEngines
-                          }
-                        </span>
-                      )}
+                  {selectedRecord.recommendation && (
+                    <div className="detail-recommendation">
+                      <span>✦</span>
+                      <div>
+                        <strong>Recommended action</strong>
+                        <p>{selectedRecord.recommendation}</p>
+                      </div>
                     </div>
                   )}
                 </div>
-              );
-            })}
+              )}
+            </section>
+          </div>
+        </section>
+
+        {/* STATES */}
+        {loading && (
+          <div className="investigation-state">
+            <div className="investigation-spinner" />
+            <strong>Loading investigation records...</strong>
           </div>
         )}
 
-        {/* ================= FOOTER ================= */}
+        {!loading && error && (
+          <div className="investigation-state error">
+            <strong>Unable to load scan history</strong>
+            <p>{error}</p>
+          </div>
+        )}
 
-        <div
-          style={{
-            textAlign: "center",
-            padding: "45px 0 15px",
-            color: "#475569",
-            fontSize: "13px",
-          }}
-        >
-          🛡️ FraudLens Security Center
-        </div>
-      </div>
+        {!loading && !error && history.length === 0 && (
+          <div className="investigation-state">
+            <strong>No scan activity yet</strong>
+            <p>Your URL, Email and SMS scans will appear here.</p>
+          </div>
+        )}
+
+      </main>
     </PageLayout>
   );
 }

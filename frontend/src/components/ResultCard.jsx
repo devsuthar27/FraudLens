@@ -1,3 +1,4 @@
+
 function ResultCard({
   score,
   status,
@@ -13,378 +14,309 @@ function ResultCard({
   );
 
   let riskLevel;
-  let riskColor;
+  let riskClass;
 
   if (scoreNumber <= 30) {
     riskLevel = "LOW RISK";
-    riskColor = "#22C55E";
+    riskClass = "risk-low";
   } else if (scoreNumber <= 70) {
     riskLevel = "MEDIUM RISK";
-    riskColor = "#F59E0B";
+    riskClass = "risk-medium";
   } else {
     riskLevel = "HIGH RISK";
-    riskColor = "#EF4444";
+    riskClass = "risk-high";
   }
 
-  return (
-    <div
-      style={{
-        background:
-          "linear-gradient(145deg, #172033, #111827)",
-        border: "1px solid #26364F",
-        borderRadius: "20px",
-        padding: "30px",
-        boxShadow:
-          "0 20px 60px rgba(0,0,0,0.35)",
-      }}
-    >
-      {/* HEADER */}
+  const circumference = 2 * Math.PI * 68;
+  const progress = (scoreNumber / 100) * circumference;
 
-      <div
-        style={{
-          textAlign: "center",
-          marginBottom: "25px",
-        }}
-      >
-        <div
-          style={{
-            display: "inline-block",
-            padding: "7px 15px",
-            borderRadius: "20px",
-            background: `${riskColor}18`,
-            color: riskColor,
-            border: `1px solid ${riskColor}55`,
-            fontSize: "12px",
-            fontWeight: "bold",
-          }}
-        >
+  const engineStats = [
+    {
+      label: "Malicious",
+      value: details?.malicious ?? 0,
+      className: "engine-malicious",
+      symbol: "!",
+    },
+    {
+      label: "Suspicious",
+      value: details?.suspicious ?? 0,
+      className: "engine-suspicious",
+      symbol: "⚠",
+    },
+    {
+      label: "Harmless",
+      value: details?.harmless ?? 0,
+      className: "engine-harmless",
+      symbol: "✓",
+    },
+    {
+      label: "Undetected",
+      value: details?.undetected ?? 0,
+      className: "engine-undetected",
+      symbol: "—",
+    },
+  ];
+
+  return (
+    <section className={`fl-report ${riskClass}`}>
+      {/* REPORT HEADER */}
+      <header className="fl-report-header">
+        <div>
+          <div className="fl-report-eyebrow">
+            <span className="fl-report-live-dot" />
+            FRAUDLENS / THREAT INTELLIGENCE REPORT
+          </div>
+
+          <h2>Security assessment</h2>
+
+          <p>
+            Analysis completed. Review the assessment and
+            recommendations below.
+          </p>
+        </div>
+
+        <div className="fl-report-complete">
+          <span>✓</span>
           ANALYSIS COMPLETE
         </div>
+      </header>
 
-        <h2
-          style={{
-            fontSize: "28px",
-            margin: "15px 0 5px",
-          }}
-        >
-          🛡️ Security Analysis Result
-        </h2>
+      {/* TARGET */}
+      <div className="fl-report-target">
+        <div className="fl-report-target-icon">⌕</div>
 
-        <p
-          style={{
-            color: "#64748B",
-            margin: 0,
-            fontSize: "13px",
-            wordBreak: "break-all",
-          }}
-        >
-          {scannedUrl || "Scanned URL"}
-        </p>
-      </div>
-
-      {/* SCORE */}
-
-      <div
-        style={{
-          background: "#020617",
-          border: "1px solid #1E293B",
-          borderRadius: "16px",
-          padding: "25px",
-          textAlign: "center",
-        }}
-      >
-        <p
-          style={{
-            color: "#94A3B8",
-            margin: "0 0 8px",
-            fontSize: "14px",
-            fontWeight: "bold",
-          }}
-        >
-          THREAT SCORE
-        </p>
-
-        <div
-          style={{
-            fontSize: "56px",
-            fontWeight: "800",
-            color: riskColor,
-          }}
-        >
-          {scoreNumber}
-          <span
-            style={{
-              fontSize: "20px",
-              color: "#64748B",
-            }}
-          >
-            /100
-          </span>
+        <div className="fl-report-target-info">
+          <span>ANALYZED INPUT</span>
+          <strong>
+            {scannedUrl || "Submitted content"}
+          </strong>
         </div>
 
-        {/* SCORE BAR */}
-
-        <div
-          style={{
-            marginTop: "18px",
-            height: "12px",
-            background: "#1E293B",
-            borderRadius: "20px",
-            overflow: "hidden",
-          }}
-        >
-          <div
-            style={{
-              width: `${scoreNumber}%`,
-              height: "100%",
-              background: riskColor,
-              borderRadius: "20px",
-              transition: "width 0.8s ease",
-            }}
-          />
-        </div>
-
-        <div
-          style={{
-            marginTop: "15px",
-            display: "inline-block",
-            padding: "8px 18px",
-            borderRadius: "20px",
-            background: `${riskColor}18`,
-            color: riskColor,
-            fontWeight: "bold",
-            fontSize: "14px",
-          }}
-        >
-          {riskLevel}
+        <div className="fl-report-target-type">
+          SECURITY REPORT
         </div>
       </div>
 
-      {/* STATUS */}
+      {/* SCORE AND RISK */}
+      <div className="fl-report-overview">
+        <div className="fl-report-score-panel">
+          <div className="fl-report-section-label">
+            THREAT SCORE
+          </div>
 
-      <div
-        style={{
-          marginTop: "20px",
-          background: "#020617",
-          border: "1px solid #1E293B",
-          borderRadius: "12px",
-          padding: "17px",
-        }}
-      >
-        <div
-          style={{
-            color: "#64748B",
-            fontSize: "12px",
-            marginBottom: "6px",
-            fontWeight: "bold",
-          }}
-        >
-          STATUS
+          <div className="fl-score-content">
+            <div className="fl-score-ring">
+              <svg viewBox="0 0 160 160" role="img" aria-label={`Threat score ${scoreNumber} out of 100`}>
+                <circle
+                  className="fl-score-track"
+                  cx="80"
+                  cy="80"
+                  r="68"
+                />
+
+                <circle
+                  className="fl-score-progress"
+                  cx="80"
+                  cy="80"
+                  r="68"
+                  strokeDasharray={circumference}
+                  strokeDashoffset={circumference - progress}
+                />
+              </svg>
+
+              <div className="fl-score-value">
+                <strong>{scoreNumber}</strong>
+                <span>/ 100</span>
+              </div>
+            </div>
+
+            <div className="fl-score-caption">
+              <span className="fl-report-section-label">
+                RISK CLASSIFICATION
+              </span>
+
+              <div className="fl-risk-label">
+                <span className="fl-risk-indicator" />
+                {riskLevel}
+              </div>
+
+              <p>
+                {scoreNumber <= 30
+                  ? "The reported threat score is relatively low. Continue to verify unexpected messages and links."
+                  : scoreNumber <= 70
+                    ? "The reported threat score indicates caution. Review the findings before interacting."
+                    : "The reported threat score is high. Avoid interacting with this content until it has been verified."}
+              </p>
+            </div>
+          </div>
         </div>
 
-        <div
-          style={{
-            color: riskColor,
-            fontWeight: "bold",
-          }}
-        >
-          {status || "Unknown"}
+        <div className="fl-report-status-panel">
+          <div className="fl-report-section-label">
+            ANALYSIS STATUS
+          </div>
+
+          <div className="fl-status-value">
+            <span className="fl-status-check">✓</span>
+            <div>
+              <strong>{status || "Unknown"}</strong>
+              <span>Returned by analysis engine</span>
+            </div>
+          </div>
+
+          <div className="fl-status-divider" />
+
+          <div className="fl-report-section-label">
+            SCORE INTERPRETATION
+          </div>
+
+          <div className="fl-score-scale">
+            <div>
+              <span className="scale-dot scale-green" />
+              <span>0–30</span>
+              <strong>Low</strong>
+            </div>
+
+            <div>
+              <span className="scale-dot scale-orange" />
+              <span>31–70</span>
+              <strong>Medium</strong>
+            </div>
+
+            <div>
+              <span className="scale-dot scale-red" />
+              <span>71–100</span>
+              <strong>High</strong>
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* VIRUSTOTAL DETAILS */}
-
+      {/* ENGINE ANALYSIS */}
       {details && (
-        <div
-          style={{
-            marginTop: "20px",
-            background: "#020617",
-            border: "1px solid #1E293B",
-            borderRadius: "12px",
-            padding: "20px",
-          }}
-        >
-          <h3
-            style={{
-              marginTop: 0,
-              marginBottom: "18px",
-            }}
-          >
-            🔍 Security Engine Analysis
-          </h3>
+        <section className="fl-report-engines">
+          <div className="fl-report-block-heading">
+            <div>
+              <span className="fl-report-section-label">
+                SECURITY ENGINE
+              </span>
 
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns:
-                "repeat(auto-fit, minmax(180px, 1fr))",
-              gap: "12px",
-            }}
-          >
-            <EngineBox
-              label="Malicious"
-              value={details.malicious ?? 0}
-              color="#EF4444"
-              icon="🔴"
-            />
+              <h3>Detection breakdown</h3>
 
-            <EngineBox
-              label="Suspicious"
-              value={details.suspicious ?? 0}
-              color="#F59E0B"
-              icon="🟠"
-            />
+              <p>
+                Engine statistics returned in the analysis report.
+              </p>
+            </div>
 
-            <EngineBox
-              label="Harmless"
-              value={details.harmless ?? 0}
-              color="#22C55E"
-              icon="🟢"
-            />
-
-            <EngineBox
-              label="Undetected"
-              value={details.undetected ?? 0}
-              color="#94A3B8"
-              icon="⚪"
-            />
+            <span className="fl-engine-total">
+              {details.totalEngines ?? 0} TOTAL ENGINES
+            </span>
           </div>
 
-          <div
-            style={{
-              marginTop: "18px",
-              paddingTop: "15px",
-              borderTop: "1px solid #1E293B",
-              color: "#94A3B8",
-              fontSize: "14px",
-            }}
-          >
-            <strong style={{ color: "white" }}>
-              Total Engines Analyzed:
-            </strong>{" "}
-            {details.totalEngines ?? 0}
+          <div className="fl-engine-grid">
+            {engineStats.map((engine) => (
+              <article
+                className={`fl-engine-card ${engine.className}`}
+                key={engine.label}
+              >
+                <div className="fl-engine-card-top">
+                  <span>{engine.label}</span>
+                  <span className="fl-engine-symbol">
+                    {engine.symbol}
+                  </span>
+                </div>
+
+                <strong>{engine.value}</strong>
+
+                <span className="fl-engine-card-caption">
+                  Detection count
+                </span>
+              </article>
+            ))}
           </div>
-        </div>
+
+          <div className="fl-engine-footnote">
+            <span>ⓘ</span>
+            These values represent the engine statistics supplied
+            by the analysis service.
+          </div>
+        </section>
       )}
 
-      {/* REASON */}
+      {/* FINDINGS */}
+      <div className="fl-report-findings">
+        <div className="fl-report-block-heading">
+          <div>
+            <span className="fl-report-section-label">
+              INVESTIGATION FINDINGS
+            </span>
 
-      <InfoBox
-        title="🔎 Why this result?"
-        text={reason || "No reason provided."}
-      />
+            <h3>Why this result?</h3>
+          </div>
+
+          <span className="fl-report-block-number">01</span>
+        </div>
+
+        <div className="fl-report-text-panel">
+          <div className="fl-report-text-icon">⌕</div>
+
+          <p>
+            {reason || "No reason provided by the analysis engine."}
+          </p>
+        </div>
+      </div>
 
       {/* RECOMMENDATION */}
+      <div className="fl-report-recommendation">
+        <div className="fl-report-block-heading">
+          <div>
+            <span className="fl-report-section-label">
+              RECOMMENDED ACTION
+            </span>
 
-      <InfoBox
-        title="💡 Security Recommendation"
-        text={
-          recommendation ||
-          "No recommendation provided."
-        }
-      />
+            <h3>Security recommendation</h3>
+          </div>
+
+          <span className="fl-report-block-number">02</span>
+        </div>
+
+        <div className="fl-report-recommendation-body">
+          <div className="fl-recommendation-icon">✦</div>
+
+          <p>
+            {recommendation ||
+              "No recommendation provided by the analysis engine."}
+          </p>
+        </div>
+      </div>
+
+      {/* REPORT FOOTER */}
+      <footer className="fl-report-footer">
+        <div>
+          <span className="fl-report-footer-mark">FL</span>
+
+          <div>
+            <strong>FRAUDLENS</strong>
+            <span>THREAT INTELLIGENCE SYSTEM</span>
+          </div>
+        </div>
+
+        <span>END OF SECURITY REPORT</span>
+      </footer>
 
       {/* ACTION */}
-
       {onScanAgain && (
         <button
+          type="button"
+          className="fl-report-scan-again"
           onClick={onScanAgain}
-          style={{
-            width: "100%",
-            marginTop: "20px",
-            padding: "14px",
-            background: "#2563EB",
-            color: "white",
-            border: "none",
-            borderRadius: "10px",
-            fontSize: "15px",
-            fontWeight: "bold",
-            cursor: "pointer",
-          }}
         >
-          🔄 Scan Another Email
+          <span>↻</span>
+          Start a new investigation
+          <span>↗</span>
         </button>
       )}
-    </div>
-  );
-}
-
-// ======================================================
-// ENGINE BOX
-// ======================================================
-
-function EngineBox({
-  label,
-  value,
-  color,
-  icon,
-}) {
-  return (
-    <div
-      style={{
-        background: "#0F172A",
-        border: "1px solid #1E293B",
-        borderRadius: "10px",
-        padding: "15px",
-      }}
-    >
-      <div
-        style={{
-          color: "#94A3B8",
-          fontSize: "13px",
-          marginBottom: "7px",
-        }}
-      >
-        {icon} {label}
-      </div>
-
-      <div
-        style={{
-          color,
-          fontSize: "24px",
-          fontWeight: "bold",
-        }}
-      >
-        {value}
-      </div>
-    </div>
-  );
-}
-
-// ======================================================
-// INFO BOX
-// ======================================================
-
-function InfoBox({ title, text }) {
-  return (
-    <div
-      style={{
-        marginTop: "20px",
-        background: "#020617",
-        border: "1px solid #1E293B",
-        borderRadius: "12px",
-        padding: "18px",
-      }}
-    >
-      <div
-        style={{
-          fontWeight: "bold",
-          marginBottom: "8px",
-        }}
-      >
-        {title}
-      </div>
-
-      <div
-        style={{
-          color: "#CBD5E1",
-          lineHeight: "1.6",
-          fontSize: "14px",
-        }}
-      >
-        {text}
-      </div>
-    </div>
+    </section>
   );
 }
 
